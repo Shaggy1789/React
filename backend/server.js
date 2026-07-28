@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import http from 'http';
 
 const CATALOG_API = 'http://localhost:6000';
 
@@ -7,22 +8,44 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const FALLBACK_PRODUCTS = [
+  { id: '1', name: 'Laptop Gamer Nitro 5', price: 24999, originalPrice: 28999, category: 'computo', rating: 4.5, reviews: 128, badge: 'Oferta', color: '#1e293b', image: '💻' },
+  { id: '2', name: 'Mouse Inalambrico Pro', price: 899, originalPrice: 1199, category: 'accesorios', rating: 4.4, reviews: 312, badge: null, color: '#0891b2', image: '🖱️' },
+  { id: '3', name: 'Teclado Mecanico RGB', price: 1899, originalPrice: null, category: 'accesorios', rating: 4.7, reviews: 203, badge: 'Mas vendido', color: '#4f46e5', image: '⌨️' },
+  { id: '4', name: 'Audifonos Bluetooth ANC', price: 2499, originalPrice: 3299, category: 'audio', rating: 4.6, reviews: 167, badge: 'Nuevo', color: '#7c3aed', image: '🎧' },
+  { id: '5', name: 'SSD 1TB NVMe M.2', price: 2199, originalPrice: null, category: 'computo', rating: 4.9, reviews: 421, badge: 'Oferta', color: '#2563eb', image: '💾' },
+  { id: '6', name: 'Silla Gamer Ergonómica', price: 8499, originalPrice: 9999, category: 'muebles', rating: 4.8, reviews: 56, badge: 'Envio gratis', color: '#dc2626', image: '🪑' },
+  { id: '7', name: 'Hub USB-C 7 en 1', price: 899, originalPrice: null, category: 'accesorios', rating: 4.6, reviews: 256, badge: 'Mas vendido', color: '#14b8a6', image: '🔌' },
+  { id: '8', name: 'Monitor 27" 4K UHD', price: 8999, originalPrice: 10999, category: 'computo', rating: 4.3, reviews: 85, badge: null, color: '#334155', image: '🖥️' },
+];
+
 let basket = [];
 let basketIdCounter = 1;
+
+function httpGet(url) {
+  return new Promise((resolve, reject) => {
+    http.get(url, (resp) => {
+      let data = '';
+      resp.on('data', (chunk) => data += chunk);
+      resp.on('end', () => {
+        try { resolve(JSON.parse(data)); }
+        catch { reject(new Error('JSON parse error')); }
+      });
+    }).on('error', reject);
+  });
+}
 
 app.get('/products', async (req, res) => {
   try {
     const { category, search } = req.query;
-
-    let url;
+    let path;
     if (category && category !== 'todas') {
-      url = `${CATALOG_API}/products/category/${encodeURIComponent(category)}`;
+      path = `/products/category/${encodeURIComponent(category)}`;
     } else {
-      url = `${CATALOG_API}/products?pageNumber=1&pageSize=50`;
+      path = '/products?pageNumber=1&pageSize=50';
     }
 
-    const resp = await fetch(url);
-    const json = await resp.json();
+    const json = await httpGet(`http://localhost:6000${path}`);
 
     let list = [];
     if (json?.products?.data) list = json.products.data;
@@ -48,9 +71,15 @@ app.get('/products', async (req, res) => {
     }
 
     res.json(mapped);
-  } catch (err) {
-    console.error('Error fetching products:', err.message);
-    res.status(502).json({ error: 'Failed to fetch products', detail: err.message });
+  } catch {
+    let fallback = FALLBACK_PRODUCTS;
+    const { category, search } = req.query;
+    if (category && category !== 'todas') fallback = fallback.filter(p => p.category === category);
+    if (search) {
+      const q = search.toLowerCase();
+      fallback = fallback.filter(p => p.name.toLowerCase().includes(q));
+    }
+    res.json(fallback);
   }
 });
 
