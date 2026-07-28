@@ -1,0 +1,26 @@
+services:
+  mock-backend:
+    container_name: mock-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "6060:6060"
+    networks:
+      - eshop-network
+
+  frontend:
+    container_name: store-frontend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - mock-backend
+    networks:
+      - eshop-network
+
+networks:
+  eshop-network:
+    driver: bridge
