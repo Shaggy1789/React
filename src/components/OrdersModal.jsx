@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getOrders } from '../api/ordersService';
+import { downloadOrderPDF, printOrderReceipt } from '../utils/orderReceipt';
+import { Download, Printer } from 'lucide-react';
 
 const STATUS_BADGES = {
   pending: { label: 'Pendiente', color: '#f59e0b', bg: '#fff7e7', border: '#fbbf24' },
@@ -133,6 +135,20 @@ export default function OrdersModal({ isOpen, onClose, users, currentUser, onUse
                       </div>
                       <div className="order-status-badge-container">
                         {getStatusBadge(order.status)}
+                      </div>
+                      <div className="order-card-actions">
+                        <button
+                          className="btn-pdf btn-pdf-sm"
+                          onClick={(e) => { e.stopPropagation(); downloadOrderPDF(order); }}
+                        >
+                          <Download size={14} /> Descargar PDF
+                        </button>
+                        <button
+                          className="btn-pdf btn-pdf-print btn-pdf-sm"
+                          onClick={(e) => { e.stopPropagation(); printOrderReceipt(order); }}
+                        >
+                          <Printer size={14} /> Imprimir
+                        </button>
                       </div>
                     </div>
                   ))}

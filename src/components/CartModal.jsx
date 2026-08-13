@@ -9,7 +9,7 @@ export default function CartModal({ isOpen, onClose, refreshKey, onUpdate, onCre
 
   const fetchCart = () => {
     setLoading(true);
-    getBasket()
+    getBasket(currentUser)
       .then(setItems)
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
@@ -17,12 +17,12 @@ export default function CartModal({ isOpen, onClose, refreshKey, onUpdate, onCre
 
   useEffect(() => {
     if (isOpen) fetchCart();
-  }, [isOpen, refreshKey]);
+  }, [isOpen, refreshKey, currentUser]);
 
   const handleRemove = async (id) => {
     setRemoving(id);
     try {
-      await removeFromBasket(id);
+      await removeFromBasket(id, currentUser);
       setItems(p => p.filter(i => i.id !== id));
       onUpdate?.();
     } catch { fetchCart(); }

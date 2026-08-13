@@ -403,6 +403,10 @@
 .btn-pdf-print { background: #0891b2; }
 .btn-pdf-print:hover { background: #0e7490; box-shadow: 0 4px 12px rgba(8,145,178,0.3); }
 
+/* Card-level receipt buttons inside OrdersModal */
+.order-card-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.btn-pdf-sm { padding: 6px 10px; border-radius: 8px; font-size: 0.75rem; }
+
 /* Focus visible for accessibility */
 *:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
 

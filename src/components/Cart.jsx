@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { getBasket, removeFromBasket } from '../api/cartService';
 import CartItem from './CartItem';
 
-export default function Cart() {
+export default function Cart({ currentUser }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const fetchCart = () => {
     setLoading(true);
-    getBasket()
+    getBasket(currentUser)
       .then(setItems)
       .catch(setError)
       .finally(() => setLoading(false));
@@ -17,11 +17,11 @@ export default function Cart() {
 
   useEffect(() => {
     fetchCart();
-  }, []);
+  }, [currentUser]);
 
   const handleRemove = async (id) => {
     try {
-      await removeFromBasket(id);
+      await removeFromBasket(id, currentUser);
       fetchCart();
     } catch (err) {
       setError(err);
