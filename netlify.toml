@@ -1,0 +1,45 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
+
+# Redirige todas las rutas de la API mock a la Netlify Function unica "api".
+# El estado vive en memoria dentro de la funcion (se pierde en cold start).
+
+[[redirects]]
+  from = "/products"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/products/*"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/basket"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/basket/*"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+# Fallback SPA: cualquier otra ruta sirve index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
