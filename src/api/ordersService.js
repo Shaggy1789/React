@@ -1,4 +1,4 @@
-import { tryFetch, CURRENT_USER } from './cartService';
+import { tryFetch, CURRENT_USER, ORDERS_BASE } from './cartService';
 
 const STATUS_LABELS = {
   0: 'pending',
@@ -36,12 +36,12 @@ function mapOrder(order) {
 
 export async function getOrders(userId) {
   const user = userId || CURRENT_USER || 'guest';
-  const data = await tryFetch(`/api/orders/customer/${user}`);
+  const data = await tryFetch(`${ORDERS_BASE}/api/orders/customer/${user}`);
   return (data && Array.isArray(data.orders) ? data.orders : []).map(mapOrder);
 }
 
 export async function getOrder(id, userId) {
-  const data = await tryFetch(`/api/orders/${id}`);
+  const data = await tryFetch(`${ORDERS_BASE}/api/orders/${id}`);
   if (!data) return null;
   const order = mapOrder(data.order || data);
   const expectedUser = userId || CURRENT_USER || 'guest';
@@ -56,7 +56,7 @@ export async function createOrder(userId) {
     basketId: user,
     idempotencyKey: crypto.randomUUID(),
   };
-  const data = await tryFetch('/api/orders', {
+  const data = await tryFetch(`${ORDERS_BASE}/api/orders`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(orderData),
@@ -66,7 +66,7 @@ export async function createOrder(userId) {
 }
 
 export async function updateOrderStatus(id, status) {
-  return await tryFetch(`/api/orders/${id}/status?newStatus=${status}`, {
+  return await tryFetch(`${ORDERS_BASE}/api/orders/${id}/status?newStatus=${status}`, {
     method: 'PATCH',
   });
 }

@@ -2,6 +2,10 @@ export const CURRENT_USER = 'eric';
 const USERNAME = CURRENT_USER;
 const PAGE_SIZE = 100;
 
+export const CATALOG_BASE = (import.meta.env.VITE_CATALOG_API || '').replace(/\/+$/, '');
+export const BASKET_BASE = (import.meta.env.VITE_BASKET_API || '').replace(/\/+$/, '');
+export const ORDERS_BASE = (import.meta.env.VITE_ORDERS_API || '').replace(/\/+$/, '');
+
 async function tryFetch(url, options) {
   try {
     const res = await fetch(url, options);
@@ -20,7 +24,7 @@ export async function getProducts(paramsStr) {
   const category = params.get('category');
   const search = params.get('search');
 
-  const data = await tryFetch(`/products?pageNumber=1&pageSize=${PAGE_SIZE}`);
+  const data = await tryFetch(`${CATALOG_BASE}/products?pageNumber=1&pageSize=${PAGE_SIZE}`);
 
   if (!data || !data.products || !Array.isArray(data.products.data)) {
     return [];
@@ -51,7 +55,7 @@ export async function getProducts(paramsStr) {
 }
 
 export async function getBasket(userName = USERNAME) {
-  const data = await tryFetch(`/basket/${userName}`);
+  const data = await tryFetch(`${BASKET_BASE}/basket/${userName}`);
   if (!data || !data.cart) return [];
   const cart = data.cart;
   return (cart.items || []).map((item) => ({
@@ -66,7 +70,7 @@ export async function getBasket(userName = USERNAME) {
 }
 
 export async function saveBasket(userName, items) {
-  return tryFetch('/basket', {
+  return tryFetch(`${BASKET_BASE}/basket`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

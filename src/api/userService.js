@@ -1,7 +1,7 @@
-import { tryFetch } from './cartService';
+import { tryFetch, ORDERS_BASE } from './cartService';
 
 export async function getUsers() {
-  const data = await tryFetch('/api/users');
+  const data = await tryFetch(`${ORDERS_BASE}/api/users`);
   if (!data) return [];
   const raw = Array.isArray(data.userIds) ? data.userIds : Array.isArray(data.users) ? data.users : [];
   const seen = new Set();
