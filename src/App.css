@@ -271,6 +271,9 @@
   border-color: #6366f1; outline: none; box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
 }
 
+.orders-print-all { display: flex; margin-bottom: 18px; }
+.btn-print-all { width: 100%; justify-content: center; }
+
 /* === FORM (product + checkout) === */
 .product-form { display: flex; flex-direction: column; gap: 14px; }
 .form-group { display: flex; flex-direction: column; gap: 6px; }

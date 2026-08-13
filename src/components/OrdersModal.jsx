@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getOrders } from '../api/ordersService';
-import { downloadOrderPDF, printOrderReceipt } from '../utils/orderReceipt';
+import { downloadOrderPDF, printOrderReceipt, printOrdersReport } from '../utils/orderReceipt';
 import { Download, Printer } from 'lucide-react';
 
 const STATUS_BADGES = {
@@ -25,6 +25,7 @@ export default function OrdersModal({ isOpen, onClose, users, currentUser, onUse
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [printing, setPrinting] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -53,6 +54,29 @@ export default function OrdersModal({ isOpen, onClose, users, currentUser, onUse
         {data.label}
       </span>
     );
+  };
+
+  const handlePrintAll = () => {
+    setPrinting(true);
+    setError(null);
+    getOrders(currentUser)
+      .then((data) => {
+        const seen = new Set();
+        const all = (data || []).filter((o) => {
+          if (seen.has(o.id)) return false;
+          seen.add(o.id);
+          return true;
+        });
+        if (all.length === 0) {
+          setError('No hay pedidos para imprimir.');
+          return;
+        }
+        printOrdersReport(all, currentUser);
+      })
+      .catch(() => {
+        setError('Error al obtener los pedidos para imprimir.');
+      })
+      .finally(() => setPrinting(false));
   };
 
   if (!isOpen) return null;
@@ -86,6 +110,15 @@ export default function OrdersModal({ isOpen, onClose, users, currentUser, onUse
                     </option>
                   ))}
                 </select>
+              </div>
+              <div className="orders-print-all">
+                <button
+                  className="btn-pdf btn-pdf-print btn-print-all"
+                  onClick={handlePrintAll}
+                  disabled={loading || printing}
+                >
+                  <Printer size={16} /> {printing ? 'Preparando impresión...' : 'Imprimir pedidos'}
+                </button>
               </div>
 
               {loading ? (
