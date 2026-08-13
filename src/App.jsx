@@ -1,33 +1,64 @@
-/* App.jsx — Componente principal. Estado global, busqueda, categorias y carrito */
+/* App.jsx — Componente principal. Estado global, busqueda, categorias, carrito y pedidos */
 import { useState, useEffect } from 'react';
-import { addToBasket, getBasket } from './api/cartService';
+import { addToBasket, getBasket, saveBasket, CURRENT_USER } from './api/cartService';
+import { createOrder } from './api/ordersService';
+import { getUsers } from './api/userService';
 import ProductList from './components/ProductList';
 import CartModal from './components/CartModal';
+import OrdersModal from './components/OrdersModal';
+import OrderDetail from './components/OrderDetail';
+import AddProductModal from './components/AddProductModal';
 import { Search, ShoppingCart, Package } from 'lucide-react';
 import './App.css';
 
 function App() {
   const [cartKey, setCartKey] = useState(0);
   const [cartOpen, setCartOpen] = useState(false);
+  const [ordersOpen, setOrdersOpen] = useState(false);
+  const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const [error, setError] = useState(null);
   const [adding, setAdding] = useState(null);
-  const [cartCount, setCartCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [category, setCategory] = useState('todas');
   const [toast, setToast] = useState(null);
+  const [cartCount, setCartCount] = useState(0);
+  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [productRefreshKey, setProductRefreshKey] = useState(0);
+  const [users, setUsers] = useState([]);
+  const [currentUser, setCurrentUser] = useState(CURRENT_USER);
 
   useEffect(() => {
-    getBasket().then(items => {
-      const count = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
-      setCartCount(count);
-    }).catch(() => {});
-  }, [cartKey]);
+    getUsers().then((list) => {
+      setUsers(list);
+      if (list.length > 0) {
+        setCurrentUser(list[0].name);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    const loadCartCount = async () => {
+      try {
+        const items = await getBasket(currentUser);
+        const count = items && items.length > 0 
+          ? items.reduce((sum, item) => sum + (item.quantity || 1), 0)
+          : 0;
+        setCartCount(count);
+        setError(null);
+      } catch (err) {
+        setError(err.message);
+        setCartCount(0);
+      }
+    };
+    loadCartCount();
+  }, [cartKey, currentUser]);
 
   const handleAddToCart = async (product) => {
     try {
       setError(null);
       setAdding(product.id);
-      await addToBasket(product);
+      await addToBasket(product, currentUser);
       setCartKey(k => k + 1);
       setToast(`${product.name} agregado al carrito`);
       setTimeout(() => setAdding(null), 600);
@@ -59,6 +90,13 @@ function App() {
               <ShoppingCart size={20} />
               {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
               <span className="cart-label">Carrito</span>
+            </button>
+            <button className="orders-trigger" onClick={() => setOrdersOpen(true)}>
+              <Package size={20} />
+              <span className="orders-label">Pedidos</span>
+            </button>
+            <button className="add-product-trigger" onClick={() => setShowAddProduct(true)}>
+              <Search size={20} /> Quiero añadir un producto
             </button>
           </div>
         </div>
@@ -98,11 +136,32 @@ function App() {
       )}
 
       <main className="app-main">
-        <ProductList
+<ProductList
           onAddToCart={handleAddToCart}
           addingId={adding}
           searchTerm={searchTerm}
           category={category}
+          refreshKey={productRefreshKey}
+/>
+        {selectedOrder && (
+          <OrderDetail
+            orderId={selectedOrder.id}
+            currentUser={currentUser}
+            onBack={() => {
+              setSelectedOrder(null);
+              setOrdersOpen(true);
+              setOrdersRefreshKey(k => k + 1);
+            }}
+          />
+        )}
+        <AddProductModal
+          isOpen={showAddProduct}
+          onClose={() => setShowAddProduct(false)}
+          onCreateProduct={result => {
+            setToast('Producto creado #' + result.id);
+            setProductRefreshKey(k => k + 1);
+            setTimeout(() => setToast(null), 2500);
+          }}
         />
       </main>
 
@@ -110,7 +169,44 @@ function App() {
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
         refreshKey={cartKey}
+        currentUser={currentUser}
         onUpdate={() => setCartKey(k => k + 1)}
+        onCreateOrder={async () => {
+          try {
+            setError(null);
+            setAdding(null);
+            const items = await getBasket(currentUser);
+            await saveBasket(currentUser, items);
+            const result = await createOrder(currentUser);
+            await saveBasket(currentUser, []);
+            setCartCount(0);
+            setSelectedOrder({ id: result.id });
+            setCartOpen(false);
+            setToast(`Pedido creado #${result.id} - ${result.statusName || result.status}`);
+            setCartKey(k => k + 1);
+            setOrdersRefreshKey(k => k + 1);
+            setTimeout(() => setToast(null), 2500);
+          } catch (err) {
+            setError(err.message);
+            setAdding(null);
+          }
+        }}
+      />
+
+      <OrdersModal
+        isOpen={ordersOpen}
+        onClose={() => setOrdersOpen(false)}
+        users={users}
+        currentUser={currentUser}
+        onUserChange={(user) => {
+          setCurrentUser(user);
+          setCartKey(k => k + 1);
+        }}
+        refreshKey={ordersRefreshKey}
+        onSelect={(order) => {
+          setSelectedOrder(order);
+          setOrdersOpen(false);
+        }}
       />
 
       <footer className="app-footer">

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <script>
+    async function test(name, url) {
+      try {
+        const res = await fetch(url);
+        const text = await res.text().substring(0, 200);
+        console.log(name + ": HTTP " + res.status + " - " + text);
+      } catch(e) {
+        console.log(name + ": ERROR - " + e.message);
+      }
+    }
+    test('Products', 'http://localhost:6060/products');
+    test('Basket', 'http://localhost:6060/basket');
+    test('Orders', 'http://localhost:6060/orders');
+  </script>
+</body>
+</html>

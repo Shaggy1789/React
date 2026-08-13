@@ -22,6 +22,9 @@ const FALLBACK_PRODUCTS = [
 let basket = [];
 let basketIdCounter = 1;
 
+let products = [];
+let productIdCounter = 1;
+
 function httpGet(url) {
   return new Promise((resolve, reject) => {
     http.get(url, (resp) => {
@@ -83,6 +86,27 @@ app.get('/products', async (req, res) => {
   }
 });
 
+app.post('/products', (req, res) => {
+  const { name, price, originalPrice, category, image, badge, rating, reviews } = req.body;
+  if (!name || price === undefined) {
+    return res.status(400).json({ message: 'Name and price are required' });
+  }
+  const product = {
+    id: String(productIdCounter++),
+    name,
+    price,
+    originalPrice: originalPrice !== undefined ? originalPrice : null,
+    category: category || 'general',
+    rating: rating !== undefined ? rating : 0,
+    reviews: reviews !== undefined ? reviews : 0,
+    badge: badge || null,
+    color: image ? '#1e293b' : '#64748b',
+    image: image || '',
+  };
+  products.push(product);
+  res.status(201).json(product);
+});
+
 app.get('/basket', (req, res) => {
   res.json(basket);
 });
@@ -108,6 +132,51 @@ app.post('/basket', (req, res) => {
 app.delete('/basket/:id', (req, res) => {
   basket = basket.filter((item) => item.id !== req.params.id);
   res.status(204).send();
+});
+
+let orders = [];
+let orderIdCounter = 1;
+
+app.get('/orders', (req, res) => {
+  const userId = req.query.userId;
+  let list = orders;
+  if (userId) {
+    list = list.filter(o => o.userId === userId);
+  }
+  res.json(list);
+});
+
+app.get('/orders/:id', (req, res) => {
+  const order = orders.find(o => o.id === req.params.id);
+  if (order) {
+    res.json(order);
+  } else {
+    res.status(404).json({ message: 'Order not found' });
+  }
+});
+
+app.post('/orders', (req, res) => {
+  const { userId, items, total } = req.body;
+  const order = {
+    id: String(orderIdCounter++),
+    userId: userId || 'guest',
+    items: items || [],
+    total: total || 0,
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+  };
+  orders.push(order);
+  res.status(201).json(order);
+});
+
+app.put('/orders/:id/status', (req, res) => {
+  const order = orders.find(o => o.id === req.params.id);
+  if (order) {
+    order.status = req.body.status;
+    res.json(order);
+  } else {
+    res.status(404).json({ message: 'Order not found' });
+  }
 });
 
 const PORT = process.env.PORT || 6060;

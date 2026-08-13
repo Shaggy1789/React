@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { getProducts } from '../api/cartService';
 import ProductCard from './ProductCard';
 
-export default function ProductList({ onAddToCart, addingId, searchTerm, category }) {
+export default function ProductList({ onAddToCart, addingId, searchTerm, category, refreshKey }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -16,7 +16,7 @@ export default function ProductList({ onAddToCart, addingId, searchTerm, categor
       .then(setProducts)
       .catch(setError)
       .finally(() => setLoading(false));
-  }, [category, searchTerm]);
+  }, [category, searchTerm, refreshKey]);
 
   if (loading) return (
     <div className="status-container">

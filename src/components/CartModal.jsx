@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { getBasket, removeFromBasket } from '../api/cartService';
 
-export default function CartModal({ isOpen, onClose, refreshKey, onUpdate }) {
+export default function CartModal({ isOpen, onClose, refreshKey, onUpdate, onCreateOrder, currentUser }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState(null);
+  const [creating, setCreating] = useState(false);
 
   const fetchCart = () => {
     setLoading(true);
@@ -26,6 +27,16 @@ export default function CartModal({ isOpen, onClose, refreshKey, onUpdate }) {
       onUpdate?.();
     } catch { fetchCart(); }
     setRemoving(null);
+  };
+
+  const handleCheckout = async () => {
+    if (items.length === 0 || creating) return;
+    setCreating(true);
+    try {
+      await onCreateOrder?.(currentUser || 'eric');
+    } finally {
+      setCreating(false);
+    }
   };
 
   const total = items.reduce((sum, i) => sum + (i.price ?? 0) * (i.quantity || 1), 0);
@@ -75,8 +86,22 @@ export default function CartModal({ isOpen, onClose, refreshKey, onUpdate }) {
             <span>Total ({count} articulo{count !== 1 ? 's' : ''})</span>
             <strong>${total.toLocaleString()}</strong>
           </div>
-          <button className="btn-checkout" disabled={items.length === 0}>
-            Ir a pagar — ${total.toLocaleString()}
+          <div className="cart-checkout-user">
+            <label htmlFor="checkout-user">Usuario para el pedido</label>
+            <input
+              id="checkout-user"
+              type="text"
+              value={currentUser || 'eric'}
+              readOnly
+              aria-label="Usuario para el pedido"
+            />
+          </div>
+          <button
+            className="btn-checkout"
+            disabled={items.length === 0 || creating}
+            onClick={handleCheckout}
+          >
+            {creating ? 'Creando pedido...' : `Ir a pagar — $${total.toLocaleString()}`}
           </button>
         </div>
       </div>

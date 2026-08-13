@@ -6,7 +6,11 @@ export default function ProductCard({ product, onAdd, isAdding }) {
     <div className={`product-card ${isAdding ? 'adding' : ''}`}>
       {product.badge && <span className="product-badge">{product.badge}</span>}
       <div className="product-image" style={{ background: product.color + '15' }}>
-        <span className="product-emoji">{product.image}</span>
+        {String(product.image || '').startsWith('http') ? (
+          <img className="product-img" src={product.image} alt={product.name} />
+        ) : (
+          <span className="product-emoji">{product.image || '📦'}</span>
+        )}
       </div>
       <h3>{product.name}</h3>
       <div className="product-rating">
