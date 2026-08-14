@@ -54,11 +54,10 @@ let baskets = {};
 let orders = SEED_ORDERS.map((o) => ({ ...o, items: o.items.map((i) => ({ ...i })) }));
 
 function json(statusCode, payload) {
-  return {
-    statusCode,
+  return Response.json(payload, {
+    status: statusCode,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  };
+  });
 }
 
 function ok(payload) {
@@ -73,24 +72,12 @@ function badRequest(message) {
   return json(400, { error: message });
 }
 
-function getBody(event) {
-  if (!event.body) return {};
-  try {
-    return JSON.parse(event.body);
-  } catch {
-    return {};
-  }
-}
-
 function round2(n) {
   return Math.round(n * 100) / 100;
 }
 
-function handleProducts(event) {
-  const method = event.httpMethod;
-
+function handleProducts({ method, body }) {
   if (method === 'POST') {
-    const body = getBody(event);
     const newProduct = {
       id: `prod-${Date.now()}`,
       name: body.name || 'Producto nuevo',
@@ -112,13 +99,10 @@ function handleProducts(event) {
   return ok({ products: { count: products.length, pageNumber: 1, pageSize: 100, data: products } });
 }
 
-function handleBasket(event) {
-  const { pathname } = new URL(event.rawUrl);
-  const method = event.httpMethod;
+function handleBasket({ method, pathname, body }) {
   const segments = pathname.split('/').filter(Boolean);
 
   if (method === 'POST') {
-    const body = getBody(event);
     const cart = body.cart || body;
     const username = cart?.username || 'guest';
     baskets[username] = Array.isArray(cart?.items) ? cart.items : [];
@@ -138,12 +122,8 @@ function handleUsers() {
   return ok({ userIds });
 }
 
-function handleOrders(event) {
-  const { pathname, searchParams } = new URL(event.rawUrl);
-  const method = event.httpMethod;
-
+function handleOrders({ method, pathname, searchParams, body }) {
   if (pathname === '/api/orders' && method === 'POST') {
-    const body = getBody(event);
     const customerId = body.customerId || 'guest';
     const basketId = body.basketId || customerId;
     const idempotencyKey = body.idempotencyKey;
@@ -213,20 +193,22 @@ function handleOrders(event) {
   return notFound('Ruta /api/orders no reconocida');
 }
 
-export default async function handler(event) {
-  const { pathname } = new URL(event.rawUrl);
+export default async function handler(request) {
+  const { pathname, searchParams } = new URL(request.url);
+  const method = request.method;
+  const body = await request.json().catch(() => ({}));
 
   if (pathname === '/products' || pathname.startsWith('/products/')) {
-    return handleProducts(event);
+    return handleProducts({ method, body });
   }
   if (pathname === '/basket' || pathname.startsWith('/basket/')) {
-    return handleBasket(event);
+    return handleBasket({ method, pathname, body });
   }
   if (pathname === '/api/users') {
     return handleUsers();
   }
   if (pathname === '/api/orders' || pathname.startsWith('/api/orders/')) {
-    return handleOrders(event);
+    return handleOrders({ method, pathname, searchParams, body });
   }
 
   return notFound('Ruta no encontrada en la funcion mock');
